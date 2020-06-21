@@ -117,6 +117,7 @@ if __name__ == "__main__":
     parser.add_argument('step_number', action='store')
     parser.add_argument('input', help='input path or file')
     parser.add_argument('-o', dest='output_file', help='output file')
+    parser.add_argument('--not-dry-run', dest='not_dry_run', action='store_true', help='include flag to actually overwrite original video files')
     args = parser.parse_args()
     
     if args.step_number == '0':
@@ -130,4 +131,4 @@ if __name__ == "__main__":
         filter_bit_rate(args.input, args.output_file)
 
     if args.step_number == '4':
-        reduce_bit_rate(args.input)
+        reduce_bit_rate(args.input, not args.not_dry_run)
