@@ -72,8 +72,16 @@ def filter_bit_rate(input_file, output_file="filtered_bitrates.txt"):
     f.close()
     of.close()
 
-def reduce_bit_rate(input_file, dry_run=True):
+def reduce_bit_rate(input_file, dry_run=True, output_log_file=None):
+    if output_log_file is None:
+        output_log_file = 'compression_log.txt'
+
     f = open(input_file, 'r')
+    of = open(output_log_file, 'a+')
+
+    def log(msg):
+        print(msg)
+        of.write(msg + '\n')
 
     net_size_saving = 0
 
@@ -82,7 +90,7 @@ def reduce_bit_rate(input_file, dry_run=True):
         file_base, ext = os.path.splitext(video_file)
         video_file_compressed = file_base + '_comp' + '.mp4'
         CRF = 26
-        print(video_file)
+        log(video_file)
         call = ['ffmpeg', '-loglevel', 'error', \
         '-i', video_file.replace('\"', ''), \
         '-vcodec', 'libx265', '-x265-params', 'log-level=error',\
@@ -100,10 +108,10 @@ def reduce_bit_rate(input_file, dry_run=True):
         new_size = ffquery(video_file_compressed, 'size')
         comp_factor = new_size / old_size
 
-        print(f'Compressed {video_file} from {old_size/(10**6)} mb to {new_size/(10**6)} mb, a factor of {comp_factor} ')
+        log(f'Compressed {video_file} from {old_size/(10**6)} mb to {new_size/(10**6)} mb, a factor of {comp_factor} ')
 
         if comp_factor >= 0.5:
-            print("\tNot replacing this video, as compression factor wasn't exciting enough.")
+            log("\tNot replacing this video, as compression factor wasn't exciting enough.")
             #TODO: delete the comp file
         else:
             if not dry_run:
@@ -113,12 +121,17 @@ def reduce_bit_rate(input_file, dry_run=True):
                 subprocess.run(['rm', video_file.replace('\"', '')])
                 
                 subprocess.run(['mv', video_file_compressed.replace('\"', ''), new_video_file])
-            net_size_saving += old_size - new_size
+                log(f'Replaced {new_video_file}')
 
+            net_size_saving += old_size - new_size
+            
         #HACK testing
         # break
 
-    print(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
+    of.close()
+    f.close()
+
+    log(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Video cleanup')
@@ -136,6 +149,6 @@ if __name__ == "__main__":
     elif args.step_number == '2':
         filter_bit_rate(args.input, args.output_file)
     elif args.step_number == '4':
-        reduce_bit_rate(args.input, not args.not_dry_run)
+        reduce_bit_rate(args.input, not args.not_dry_run, args.output_file)
     else:
         print(f'Invalid step number: {args.step_number}')
