@@ -101,8 +101,11 @@ def reduce_bit_rate(input_file, dry_run=True):
         else:
             if not dry_run:
                 # DANGER
-                subprocess.run(['mv', video_file_compressed, video_file])
+                subprocess.run(['mv', video_file_compressed.replace('\"', ''), video_file.replace('\"', '')])
             net_size_saving += old_size - new_size
+
+        #HACK
+        #break
 
     print(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
 
@@ -123,5 +126,5 @@ if __name__ == "__main__":
     if args.step_number == '2':
         filter_bit_rate(args.input, args.output_file)
 
-    if args.step_number == '3':
+    if args.step_number == '4':
         reduce_bit_rate(args.input)
