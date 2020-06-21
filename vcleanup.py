@@ -84,7 +84,10 @@ def reduce_bit_rate(input_file, dry_run=True):
         '-vcodec', 'libx265', '-x265-params', 'log-level=error',\
         '-async', '1', '-vsync', '1',\
         '-threads', '8', \
-        '-crf', str(CRF), '-y', video_file_compressed.replace('\"', '')]
+        # Copies original file creation date:
+        '-map_metadata', '0:s:0', \
+        '-crf', str(CRF), \
+        '-y', video_file_compressed.replace('\"', '')]
         # print(call)
         subprocess.call(call)
 
@@ -104,8 +107,8 @@ def reduce_bit_rate(input_file, dry_run=True):
                 subprocess.run(['mv', video_file_compressed.replace('\"', ''), video_file.replace('\"', '')])
             net_size_saving += old_size - new_size
 
-        #HACK
-        #break
+        #HACK testing
+        # break
 
     print(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
 
