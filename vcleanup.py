@@ -96,7 +96,7 @@ def reduce_bit_rate(input_file, dry_run=True):
         new_size = ffquery(video_file_compressed, 'size')
         comp_factor = new_size / old_size
 
-        print(f'Compressed {video_file} from {old_size} mb to {new_size} mb, a factor of {comp_factor} ')
+        print(f'Compressed {video_file} from {old_size/1000} mb to {new_size/1000} mb, a factor of {comp_factor} ')
 
         if comp_factor >= 0.5:
             print("\tNot replacing this video, as compression factor wasn't exciting enough.")
