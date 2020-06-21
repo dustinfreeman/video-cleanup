@@ -79,7 +79,7 @@ def reduce_bit_rate(input_file, dry_run=True):
         video_file_compressed = file_base + '_comp' + ext
         CRF = 26
         print(video_file)
-        call = ['ffmpeg', '-loglevel', 'warning', \
+        call = ['ffmpeg', '-loglevel', 'error', \
         '-i', video_file.replace('\"', ''), \
         '-vcodec', 'libx265', '-x265-params', 'log-level=error',\
         '-async', '1', '-vsync', '1',\
@@ -103,8 +103,6 @@ def reduce_bit_rate(input_file, dry_run=True):
                 # DANGER
                 subprocess.run(['mv', video_file_compressed, video_file])
             net_size_saving += old_size - new_size
-
-        # break
 
     print(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
 
