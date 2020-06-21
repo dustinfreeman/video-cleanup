@@ -90,6 +90,8 @@ def reduce_bit_rate(input_file, dry_run=True):
         '-threads', '8', \
         # Copies original file creation date:
         '-map_metadata', '0:s:0', \
+        # Apple Quicktime compatibility:
+        '-pix_fmt', 'yuv420p', \
         '-crf', str(CRF), \
         '-y', video_file_compressed.replace('\"', '')]
         # print(call)
