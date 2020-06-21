@@ -6,8 +6,7 @@ from subprocess import PIPE
 video_exts = ['.avi', '.mov', '.mp4', '.flv', '.mkv', '.MTS', '.mpeg', '.m4v', '.ogv', '.mpeg']
 
 def video_search(path, output='avifound.txt'):
-    print(path)
-    print(f'Video searching {path}')
+    print(f'Video Searching {path}')
     
     video_files = []
 
@@ -19,11 +18,14 @@ def video_search(path, output='avifound.txt'):
             if ext in video_exts:
                 video_files.append(f'\"{full_path}\"')
 
+    count = 0
     f = open(output, 'w')
     for vf in video_files:
+        count += 1
         f.write(vf)
         f.write('\n')
     f.close()
+    print(f'Videos found: {count}')
 
 def ffquery(path, query):
     path = path.replace('\"', '')
@@ -56,6 +58,8 @@ def compute_bitrate_txt(list_file, output='bitrates.txt'):
     of.close()
 
 def filter_bit_rate(input_file, output_file="filtered_bitrates.txt"):
+    if output_file is None:
+        output_file = "filtered_bitrates.txt"
     f = open(input_file, 'r')
     of = open(output_file, 'w')
     for line in f:
@@ -76,7 +80,7 @@ def reduce_bit_rate(input_file, dry_run=True):
     for line in f:
         video_file = line.split(',')[2].strip()
         file_base, ext = os.path.splitext(video_file)
-        video_file_compressed = file_base + '_comp' + ext
+        video_file_compressed = file_base + '_comp' + '.mp4'
         CRF = 26
         print(video_file)
         call = ['ffmpeg', '-loglevel', 'error', \
@@ -122,13 +126,12 @@ if __name__ == "__main__":
     
     if args.step_number == '0':
         video_search(args.input)
-
-    if args.step_number == '1':
+    elif args.step_number == '1':
         # compute_bitrate(args.input)
         compute_bitrate_txt(args.input)
-
-    if args.step_number == '2':
+    elif args.step_number == '2':
         filter_bit_rate(args.input, args.output_file)
-
-    if args.step_number == '4':
+    elif args.step_number == '4':
         reduce_bit_rate(args.input, not args.not_dry_run)
+    else:
+        print(f'Invalid step number: {args.step_number}')
