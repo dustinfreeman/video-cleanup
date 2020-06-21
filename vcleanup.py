@@ -77,12 +77,13 @@ def reduce_bit_rate(input_file, dry_run=True):
         video_file = line.split(',')[2].strip()
         file_base, ext = os.path.splitext(video_file)
         video_file_compressed = file_base + '_comp' + ext
-        CRF = 28
+        CRF = 26
         print(video_file)
         call = ['ffmpeg', '-loglevel', 'warning', \
         '-i', video_file.replace('\"', ''), \
         '-vcodec', 'libx265', '-x265-params', 'log-level=error',\
         '-async', '1', '-vsync', '1',\
+        '-threads', '8', \
         '-crf', str(CRF), '-y', video_file_compressed.replace('\"', '')]
         # print(call)
         subprocess.call(call)
