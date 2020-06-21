@@ -108,7 +108,11 @@ def reduce_bit_rate(input_file, dry_run=True):
         else:
             if not dry_run:
                 # DANGER
-                subprocess.run(['mv', video_file_compressed.replace('\"', ''), video_file.replace('\"', '')])
+                new_video_file = file_base.replace('\"', '') + ".mp4"
+                #delete original file, as new file may have different extension
+                subprocess.run(['rm', video_file.replace('\"', '')])
+                
+                subprocess.run(['mv', video_file_compressed.replace('\"', ''), new_video_file])
             net_size_saving += old_size - new_size
 
         #HACK testing
