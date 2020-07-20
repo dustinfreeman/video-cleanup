@@ -1,11 +1,13 @@
 import argparse
 import os
+import time
 import subprocess
 from subprocess import PIPE
 
+
 video_exts = ['.avi', '.mov', '.mp4', '.flv', '.mkv', '.MTS', '.mpeg', '.m4v', '.ogv', '.mpeg']
 
-def video_search(path, output='avifound.txt'):
+def video_search(path, output='avifound.txt', modified_filter=None):
     print(f'Video Searching {path}')
     
     video_files = []
@@ -15,6 +17,11 @@ def video_search(path, output='avifound.txt'):
             ext = os.path.splitext(file)[1]
             # print(file, ext)
             full_path = os.path.join(root, file)
+            if modified_filter:
+                modified_time = os.path.getmtime(full_path)
+                modified_time_struct = time.localtime(modified_time)
+                if modified_time < modified_filter:
+                    continue
             if ext in video_exts:
                 video_files.append(f'\"{full_path}\"')
 
@@ -89,6 +96,7 @@ def reduce_bit_rate(input_file, dry_run=True):
         '-async', '1', '-vsync', '1',\
         '-threads', '8', \
         # Copies original file creation date:
+        # (Maybe doesn't work consistently?)
         '-map_metadata', '0:s:0', \
         # Apple Quicktime compatibility:
         '-pix_fmt', 'yuv420p', \
@@ -122,6 +130,57 @@ def reduce_bit_rate(input_file, dry_run=True):
 
     print(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
 
+def pix_fmt_fix(input_file, dry_run=True):
+    # On conversion, some files defaulted to pix_fmt yuv444p. 
+    # On Apple devices, this may be incompatible. Need to bulk convert these to -pix_fmt yuv420p
+
+    f = open(input_file, 'r')
+
+    net_size_saving = 0
+
+    for line in f:
+        video_file = line.strip() #line.split(',')[2].strip()
+        file_base, ext = os.path.splitext(video_file)
+        video_file_compressed = file_base + '_comp' + '.mp4'
+        CRF = 26
+        print(video_file)
+        call = ['ffmpeg', '-loglevel', 'error', \
+        '-i', video_file.replace('\"', ''), \
+        '-vcodec', 'libx265', '-x265-params', 'log-level=error',\
+        '-async', '1', '-vsync', '1',\
+        '-threads', '8', \
+        # Copies original file creation date:
+        # (Maybe doesn't work consistently?)
+        '-map_metadata', '0:s:0', \
+        # Apple Quicktime compatibility:
+        '-pix_fmt', 'yuv420p', \
+        '-crf', str(CRF), \
+        '-y', video_file_compressed.replace('\"', '')]
+        # print(call)
+        subprocess.call(call)
+
+        #compare bitrate
+        old_size = ffquery(video_file, 'size')
+        new_size = ffquery(video_file_compressed, 'size')
+        comp_factor = new_size / old_size
+
+        print(f'Compressed {video_file} from {old_size/(10**6)} mb to {new_size/(10**6)} mb, a factor of {comp_factor} ')
+
+        if not dry_run:
+            # DANGER
+            new_video_file = file_base.replace('\"', '') + ".mp4"
+            #delete original file, as new file may have different extension
+            subprocess.run(['rm', video_file.replace('\"', '')])
+            
+            subprocess.run(['mv', video_file_compressed.replace('\"', ''), new_video_file])
+        net_size_saving += old_size - new_size
+
+        #HACK testing
+        # break
+
+    print(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Video cleanup')
     parser.add_argument('step_number', action='store')
@@ -139,5 +198,9 @@ if __name__ == "__main__":
         filter_bit_rate(args.input, args.output_file)
     elif args.step_number == '4':
         reduce_bit_rate(args.input, not args.not_dry_run)
+    elif args.step_number == '0-fix':
+        video_search(args.input, modified_filter=time.mktime((2020, 6, 19, 0, 0, 0, 0, 0, 0)))
+    elif args.step_number == '4-fix':
+        pix_fmt_fix(args.input, not args.not_dry_run)
     else:
         print(f'Invalid step number: {args.step_number}')
