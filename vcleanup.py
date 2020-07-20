@@ -107,7 +107,7 @@ def reduce_bit_rate(input_file, dry_run=True, output_log_file=None):
         # (Maybe doesn't work consistently?)
         '-map_metadata', '0:s:0', \
         # Apple Quicktime compatibility:
-        '-pix_fmt', 'yuv420p', \
+        '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', \
         '-crf', str(CRF), \
         '-y', video_file_compressed.replace('\"', '')]
         # print(call)
@@ -166,7 +166,7 @@ def pix_fmt_fix(input_file, dry_run=True):
         # (Maybe doesn't work consistently?)
         '-map_metadata', '0:s:0', \
         # Apple Quicktime compatibility:
-        '-pix_fmt', 'yuv420p', \
+        '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', \
         '-crf', str(CRF), \
         '-y', video_file_compressed.replace('\"', '')]
         # print(call)
