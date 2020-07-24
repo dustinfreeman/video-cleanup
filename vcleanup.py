@@ -191,8 +191,29 @@ def pix_fmt_fix(input_file, dry_run=True):
         #HACK testing
         # break
 
+    f.close()
     print(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
 
+def tmutil_restore(input_file, dry_run=True):
+    f = open(input_file, 'r')
+    for line in f:
+        dst = line.replace("\"", "").strip()
+        no_ext = os.path.splitext(dst)[0]
+        # print(no_ext)
+
+        tm_root = '/Volumes/Knossos/Backups.backupdb/Cydonia/2020-06-14-110450/Macintosh HD - Data'
+        call = 'ls \"' + tm_root + no_ext + '\".*'
+        # print(call)
+        value = subprocess.run(call, shell=True, stdout=PIPE)
+        file_found = value.stdout.strip().decode('utf-8')
+
+        call = 'tmutil restore \"' + file_found + '\" \"' + dst + '\"'
+        print(call)
+        if not dry_run:
+            subprocess.run('rm \"' + dst + '\"', shell=True, stdout=PIPE)
+            subprocess.run(call, shell=True, stdout=PIPE)
+
+    f.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Video cleanup')
@@ -213,6 +234,8 @@ if __name__ == "__main__":
         reduce_bit_rate(args.input, not args.not_dry_run, args.output_file)
     elif args.step_number == '0-fix':
         video_search(args.input, modified_filter=time.mktime((2020, 6, 19, 0, 0, 0, 0, 0, 0)))
+    elif args.step_number == '1-fix':
+        tmutil_restore(args.input, not args.not_dry_run)
     elif args.step_number == '4-fix':
         pix_fmt_fix(args.input, not args.not_dry_run)
     else:
