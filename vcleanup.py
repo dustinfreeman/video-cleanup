@@ -113,6 +113,11 @@ def reduce_bit_rate(input_file, dry_run=True, output_log_file=None):
         # print(call)
         subprocess.call(call)
 
+        # transfer dates (macOS only)
+        value = subprocess.run('GetFileInfo -d ' + video_file, shell=True, stdout=PIPE)
+        original_c_date = value.stdout.decode('utf-8').strip()
+        subprocess.run('SetFile -d \"' + original_c_date + '\" ' + video_file_compressed.replace('\"', ''), shell=True)
+
         #compare bitrate
         old_size = ffquery(video_file, 'size')
         new_size = ffquery(video_file_compressed, 'size')
@@ -127,6 +132,7 @@ def reduce_bit_rate(input_file, dry_run=True, output_log_file=None):
             if not dry_run:
                 # DANGER
                 new_video_file = file_base.replace('\"', '') + ".mp4"
+
                 #delete original file, as new file may have different extension
                 subprocess.run(['rm', video_file.replace('\"', '')])
                 
