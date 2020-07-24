@@ -138,10 +138,9 @@ def reduce_bit_rate(input_file, dry_run=True, output_log_file=None):
         #HACK testing
         # break
 
-    of.close()
     f.close()
-
     log(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
+    of.close()
 
 def pix_fmt_fix(input_file, dry_run=True):
     # On conversion, some files defaulted to pix_fmt yuv444p. 
