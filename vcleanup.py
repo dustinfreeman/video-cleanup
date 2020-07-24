@@ -103,6 +103,8 @@ def reduce_bit_rate(input_file, dry_run=True, output_log_file=None):
         '-vcodec', 'libx265', '-x265-params', 'log-level=error',\
         '-async', '1', '-vsync', '1',\
         '-threads', '8', \
+        # Fixes issue for h265 with videos with non-even pixel dimensions
+        '-vf', "crop='iw-mod(iw,2)':'ih-mod(ih,2)'", \
         # Copies original file creation date:
         # (Maybe doesn't work consistently?)
         '-map_metadata', '0:s:0', \
