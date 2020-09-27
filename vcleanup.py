@@ -172,8 +172,8 @@ def pix_fmt_fix(input_file, dry_run=True):
         '-vcodec', 'libx265', '-x265-params', 'log-level=error',\
         '-async', '1', '-vsync', '1',\
         '-threads', '8', \
-        # Copies original file creation date:
-        # (Maybe doesn't work consistently?)
+        # Copies media creation date in the video codec info.
+        # (Unfortunately, copying OS file system creation date is harder)
         '-map_metadata', '0:s:0', \
         # Apple Quicktime compatibility:
         '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', \
