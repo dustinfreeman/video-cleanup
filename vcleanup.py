@@ -5,11 +5,13 @@ import subprocess
 from subprocess import PIPE
 
 
-video_exts = ['.avi', '.mov', '.mp4', '.flv', '.mkv', '.MTS', '.mpeg', '.m4v', '.ogv', '.mpeg']
+video_exts = ['.avi', '.mov', '.mp4', '.flv',
+              '.mkv', '.MTS', '.mpeg', '.m4v', '.ogv', '.mpeg']
+
 
 def video_search(path, output='avifound.txt', modified_filter=None):
     print(f'Video Searching {path}')
-    
+
     video_files = []
 
     for root, dirs, files in os.walk(path):
@@ -34,24 +36,28 @@ def video_search(path, output='avifound.txt', modified_filter=None):
     f.close()
     print(f'Videos found: {count}')
 
+
 def ffquery(path, query):
     path = path.replace('\"', '')
     # path = path.replace(' ', '\\ ')
 
-    call = f'ffprobe -v error -show_entries format={query} -of default=noprint_wrappers=1:nokey=1'.split(' ')
+    call = f'ffprobe -v error -show_entries format={query} -of default=noprint_wrappers=1:nokey=1'.split(
+        ' ')
     call.append(f'{path}')
 
     value = subprocess.run(call, stdout=PIPE)
     return float(value.stdout)
 
+
 def compute_bitrate(path):
     print(f'computing bitrate for {path}')
-    # bitrate = ffquery(path, 'size') / ffquery(path, 'duration') 
+    # bitrate = ffquery(path, 'size') / ffquery(path, 'duration')
     bit_rate = ffquery(path, 'bit_rate')
     # units of bytes/second
     size = ffquery(path, 'size')
     # units of bytes
     return bit_rate, size
+
 
 def compute_bitrate_txt(list_file, output='bitrates.txt'):
     f = open(list_file, 'r')
@@ -63,6 +69,7 @@ def compute_bitrate_txt(list_file, output='bitrates.txt'):
         of.write('\n')
     f.close()
     of.close()
+
 
 def filter_bit_rate(input_file, output_file="filtered_bitrates.txt"):
     if output_file is None:
@@ -78,6 +85,7 @@ def filter_bit_rate(input_file, output_file="filtered_bitrates.txt"):
             of.write(line)
     f.close()
     of.close()
+
 
 def reduce_bit_rate(input_file, dry_run=True, output_log_file=None):
     if output_log_file is None:
@@ -98,31 +106,33 @@ def reduce_bit_rate(input_file, dry_run=True, output_log_file=None):
         video_file_compressed = file_base + '_comp' + '.mp4'
         CRF = 26
         log(video_file)
-        call = ['ffmpeg', '-loglevel', 'error', \
-        '-i', video_file.replace('\"', ''), \
-        '-vcodec', 'libx265', '-x265-params', 'log-level=error',\
-        '-async', '1', '-vsync', '1',\
-        '-threads', '8', \
-        # Fixes issue for h265 with videos with non-even pixel dimensions
-        '-vf', "crop='iw-mod(iw,2)':'ih-mod(ih,2)'", \
-        # Copies original file creation date:
-        # (Maybe doesn't work consistently?)
-        '-map_metadata', '0:s:0', \
-        # Apple Quicktime compatibility:
-        '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', \
-        '-crf', str(CRF), \
-        '-y', video_file_compressed.replace('\"', '')]
+        call = ['ffmpeg', '-loglevel', 'error',
+                '-i', video_file.replace('\"', ''),
+                '-vcodec', 'libx265', '-x265-params', 'log-level=error',
+                '-async', '1', '-vsync', '1',
+                '-threads', '8', \
+                # Fixes issue for h265 with videos with non-even pixel dimensions
+                '-vf', "crop='iw-mod(iw,2)':'ih-mod(ih,2)'", \
+                # Copies original file creation date:
+                # (Maybe doesn't work consistently?)
+                '-map_metadata', '0:s:0', \
+                # Apple Quicktime compatibility:
+                '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', \
+                '-crf', str(CRF), \
+                '-y', video_file_compressed.replace('\"', '')]
         # print(call)
         subprocess.call(call)
 
         # transfer dates (macOS only)
-        value = subprocess.run('GetFileInfo -d ' + video_file, shell=True, stdout=PIPE)
+        value = subprocess.run('GetFileInfo -d ' +
+                               video_file, shell=True, stdout=PIPE)
         original_c_date = value.stdout.decode('utf-8').strip()
-        call = 'SetFile -d \"' + original_c_date + '\" \"' + video_file_compressed.replace('\"', '') + '\"'
+        call = 'SetFile -d \"' + original_c_date + '\" \"' + \
+            video_file_compressed.replace('\"', '') + '\"'
         # print(call)
         subprocess.run(call, shell=True)
 
-        #compare bitrate
+        # compare bitrate
         old_size = ffquery(video_file, 'size')
         new_size = ffquery(video_file_compressed, 'size')
         comp_factor = new_size / old_size
@@ -138,23 +148,25 @@ def reduce_bit_rate(input_file, dry_run=True, output_log_file=None):
                 # DANGER
                 new_video_file = file_base.replace('\"', '') + ".mp4"
 
-                #delete original file, as new file may have different extension
+                # delete original file, as new file may have different extension
                 subprocess.run(['rm', video_file.replace('\"', '')])
-                
-                subprocess.run(['mv', video_file_compressed.replace('\"', ''), new_video_file])
+
+                subprocess.run(
+                    ['mv', video_file_compressed.replace('\"', ''), new_video_file])
                 log(f'Replaced {new_video_file}')
 
             net_size_saving += old_size - new_size
-            
-        #HACK testing
+
+        # HACK testing
         # break
 
     f.close()
     log(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
     of.close()
 
+
 def pix_fmt_fix(input_file, dry_run=True):
-    # On conversion, some files defaulted to pix_fmt yuv444p. 
+    # On conversion, some files defaulted to pix_fmt yuv444p.
     # On Apple devices, this may be incompatible. Need to bulk convert these to -pix_fmt yuv420p
 
     f = open(input_file, 'r')
@@ -162,47 +174,51 @@ def pix_fmt_fix(input_file, dry_run=True):
     net_size_saving = 0
 
     for line in f:
-        video_file = line.strip() #line.split(',')[2].strip()
+        video_file = line.strip()  # line.split(',')[2].strip()
         file_base, ext = os.path.splitext(video_file)
         video_file_compressed = file_base + '_comp' + '.mp4'
         CRF = 26
         print(video_file)
-        call = ['ffmpeg', '-loglevel', 'error', \
-        '-i', video_file.replace('\"', ''), \
-        '-vcodec', 'libx265', '-x265-params', 'log-level=error',\
-        '-async', '1', '-vsync', '1',\
-        '-threads', '8', \
-        # Copies media creation date in the video codec info.
-        # (Unfortunately, copying OS file system creation date is harder)
-        '-map_metadata', '0:s:0', \
-        # Apple Quicktime compatibility:
-        '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', \
-        '-crf', str(CRF), \
-        '-y', video_file_compressed.replace('\"', '')]
+        call = ['ffmpeg', '-loglevel', 'error',
+                '-i', video_file.replace('\"', ''),
+                '-vcodec', 'libx265', '-x265-params', 'log-level=error',
+                '-async', '1', '-vsync', '1',
+                '-threads', '8', \
+                # Copies media creation date in the video codec info.
+                # (Unfortunately, copying OS file system creation date is harder)
+                '-map_metadata', '0:s:0', \
+                # Apple Quicktime compatibility:
+                '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', \
+                '-crf', str(CRF), \
+                '-y', video_file_compressed.replace('\"', '')]
         # print(call)
         subprocess.call(call)
 
-        #compare bitrate
+        # compare bitrate
         old_size = ffquery(video_file, 'size')
         new_size = ffquery(video_file_compressed, 'size')
         comp_factor = new_size / old_size
 
-        print(f'Compressed {video_file} from {old_size/(10**6)} mb to {new_size/(10**6)} mb, a factor of {comp_factor} ')
+        print(
+            f'Compressed {video_file} from {old_size/(10**6)} mb to {new_size/(10**6)} mb, a factor of {comp_factor} ')
 
         if not dry_run:
             # DANGER
             new_video_file = file_base.replace('\"', '') + ".mp4"
-            #delete original file, as new file may have different extension
+            # delete original file, as new file may have different extension
             subprocess.run(['rm', video_file.replace('\"', '')])
-            
-            subprocess.run(['mv', video_file_compressed.replace('\"', ''), new_video_file])
+
+            subprocess.run(
+                ['mv', video_file_compressed.replace('\"', ''), new_video_file])
         net_size_saving += old_size - new_size
 
-        #HACK testing
+        # HACK testing
         # break
 
     f.close()
-    print(f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
+    print(
+        f'Net disk space saved: {net_size_saving} bytes, {net_size_saving / 10**9} GB-ish')
+
 
 def tmutil_restore(input_file, dry_run=True):
     f = open(input_file, 'r')
@@ -225,14 +241,16 @@ def tmutil_restore(input_file, dry_run=True):
 
     f.close()
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Video cleanup')
     parser.add_argument('step_number', action='store')
     parser.add_argument('input', help='input path or file')
     parser.add_argument('-o', dest='output_file', help='output file')
-    parser.add_argument('--not-dry-run', dest='not_dry_run', action='store_true', help='include flag to actually overwrite original video files')
+    parser.add_argument('--not-dry-run', dest='not_dry_run', action='store_true',
+                        help='include flag to actually overwrite original video files')
     args = parser.parse_args()
-    
+
     if args.step_number == '0':
         video_search(args.input)
     elif args.step_number == '1':
@@ -243,7 +261,8 @@ if __name__ == "__main__":
     elif args.step_number == '4':
         reduce_bit_rate(args.input, not args.not_dry_run, args.output_file)
     elif args.step_number == '0-fix':
-        video_search(args.input, modified_filter=time.mktime((2020, 6, 19, 0, 0, 0, 0, 0, 0)))
+        video_search(args.input, modified_filter=time.mktime(
+            (2020, 6, 19, 0, 0, 0, 0, 0, 0)))
     elif args.step_number == '1-fix':
         tmutil_restore(args.input, not args.not_dry_run)
     elif args.step_number == '4-fix':
