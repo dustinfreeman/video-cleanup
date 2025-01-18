@@ -7,7 +7,7 @@ I had thousands of short videos from various projects throughout my project dire
 
 ### Usage
 
-This is designed to be run manually and carefully, step-by-step, since the changes it makes are opinionated and destructive. Please be careful! Data deletion is forever!
+**Beware!** This is designed to be run manually and carefully, step-by-step, since the changes it makes are opinionated and destructive. Please be careful! Data deletion is forever! This script includes one instance where I had to restore many files from a Time Machine backup.
 
 ### Contributing
 
